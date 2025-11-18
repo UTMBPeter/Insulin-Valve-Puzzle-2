@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Insulin Valve Lab – Hard Mode</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #e0f2fe, #fdf2ff 40%, #f9fafb 80%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .shell {
+      max-width: 900px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 20px;
+      padding: 20px 20px 18px;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.16),
+        0 0 0 1px rgba(148, 163, 184, 0.25);
+      backdrop-filter: blur(10px);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .insulin-vial {
+      width: 46px;
+      height: 80px;
+      border-radius: 14px;
+      background: linear-gradient(#e5e7eb, #f9fafb);
+      border: 2px solid #9ca3af;
+      position: relative;
+      box-shadow: 0 6px 12px rgba(15, 23, 42, 0.25);
+    }
+    .insulin-vial::before {
+      content: "";
+      position: absolute;
+      top: -16px;
+      left: 9px;
+      right: 9px;
+      height: 16px;
+      border-radius: 10px 10px 4px 4px;
+      background: linear-gradient(#111827, #4b5563);
+    }
+    .insulin-vial::after {
+      content: "INS";
+      position: absolute;
+      inset: 30px 6px 8px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #dbeafe, #a5b4fc);
+      color: #1f2933;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #111827;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+    .top-row {
+      display: grid;
+      grid-template-columns: 2.1fr 1.2fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 800px) {
+      .top-row { grid-template-columns: 1fr; }
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 720px) {
+      .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .card {
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+    }
+    .card.glucose-meter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #eef2ff, #f9fafb 55%);
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+    }
+    .unit {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-left: 2px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 999px;
+      padding: 2px 8px 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .badge.safe {
+      background: #ecfdf3;
+      color: #166534;
+    }
+    .meter-shell {
+      width: 140px;
+      height: 140px;
+      border-radius: 999px;
+      border: 10px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.15);
+      background: #ffffff;
+    }
+    .meter-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+    }
+    .meter-label {
+      position: absolute;
+      bottom: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #6b7280;
+    }
+    .safe-range {
+      font-size: 0.8rem;
+      color: #4b5563;
+      margin-bottom: 4px;
+    }
+    .legend {
+      font-size: 0.78rem;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .legend span { font-weight: 600; }
+    .pill {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      align-items: center;
+      gap: 4px;
+      margin-right: 6px;
+      margin-bottom: 2px;
+    }
+    .pill.insulin {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .pill.carbs {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .valves-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+    @media (max-width: 720px) {
+      .valves-row { grid-template-columns: 1fr; }
+    }
+    .valve-card {
+      background: #f9fafb;
+      border-radius: 16px;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      position: relative;
+      overflow: hidden;
+    }
+    .valve-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .valve-name {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: #111827;
+    }
+    .valve-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #4f46e5;
+    }
+    .valve-visual {
+      display: flex;
+      justify-content: center;
+      margin: 6px 0 4px;
+    }
+    .valve-knob {
+      width: 54px;
+      height: 54px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #ffffff, #e5e7eb 55%, #9ca3af 90%);
+      border: 2px solid #9ca3af;
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.25);
+      position: relative;
+      transition: transform 0.25s ease-out;
+    }
+    .valve-knob::before {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 20px;
+      border-radius: 999px;
+      background: linear-gradient(#4b5563, #111827);
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .valve-knob::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 999px;
+      border: 2px solid rgba(15, 23, 42, 0.1);
+    }
+    .valve-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 5px 11px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    .btn-minus {
+      background: #eff6ff;
+      color: #1d4ed8;
+      box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+    }
+    .btn-plus {
+      background: #fef3c7;
+      color: #b45309;
+      box-shadow: 0 2px 5px rgba(245, 158, 11, 0.3);
+    }
+    .btn-new {
+      background: #4f46e5;
+      color: #eef2ff;
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.5);
+      margin: 12px auto 0;
+      padding-inline: 20px;
+    }
+    .btn-disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 600;
+      min-height: 1.4em;
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+    .message.win { color: #15803d; }
+    .message.loss { color: #b91c1c; }
+    .hint {
+      font-size: 0.78rem;
+      margin-top: 4px;
+      color: #6b7280;
+      text-align: center;
+    }
+    .hint b { color: #111827; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="insulin-vial" aria-hidden="true"></div>
+      <div>
+        <h1>Insulin Valve Lab – Hard Mode</h1>
+        <div class="subtitle">
+          Hit one exact glucose target inside the normal range using insulin (–) and carbs (+).
+        </div>
+      </div>
+    </header>
+
+    <div class="top-row">
+      <div class="card">
+        <div class="safe-range">
+          Normal fasting range: <strong>70–110 mg/dL</strong>. This puzzle picks one exact target.
+        </div>
+        <div class="legend">
+          <span class="pill insulin">← Insulin (–)</span>
+          <span class="pill carbs">Carbs / glucose (+) →</span>
+          <br />
+          Turn the valves until the current value equals the target.
+        </div>
+
+        <div style="margin-top: 8px;" class="status-grid">
+          <div class="card">
+            <div class="stat-label">Starting glucose</div>
+            <div class="stat-value">
+              <span id="startingValue">–</span><span class="unit">mg/dL</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Target glucose</div>
+            <div class="stat-value">
+              <span id="targetValue">–</span><span class="unit">mg/dL</span>
+            </div>
+            <div id="targetBadge" class="badge safe">Exact safe target</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Moves</div>
+            <div class="stat-value">
+              <span id="moveCount">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card glucose-meter">
+        <div class="meter-shell">
+          <div>
+            <div id="meterValue" class="meter-value">–</div>
+            <div style="font-size:0.75rem;color:#6b7280;text-align:center;">mg/dL</div>
+          </div>
+          <div class="meter-label" id="meterLabel">Current</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="valves-row">
+      <div class="valve-card">
+        <div class="valve-label-row">
+          <div class="valve-name">Valve A</div>
+          <div class="valve-value"><span id="valve0">–</span></div>
+        </div>
+        <div class="valve-visual">
+          <div class="valve-knob" id="knob0"></div>
+        </div>
+        <div class="valve-buttons">
+          <button class="btn-minus" id="btnMinus0" onclick="turnValve(0, -1)">
+            ← Insulin (–)
+          </button>
+          <button class="btn-plus" id="btnPlus0" onclick="turnValve(0, 1)">
+            Carbs (+) →
+          </button>
+        </div>
+      </div>
+
+      <div class="valve-card">
+        <div class="valve-label-row">
+          <div class="valve-name">Valve B</div>
+          <div class="valve-value"><span id="valve1">–</span></div>
+        </div>
+        <div class="valve-visual">
+          <div class="valve-knob" id="knob1"></div>
+        </div>
+        <div class="valve-buttons">
+          <button class="btn-minus" id="btnMinus1" onclick="turnValve(1, -1)">
+            ← Insulin (–)
+          </button>
+          <button class="btn-plus" id="btnPlus1" onclick="turnValve(1, 1)">
+            Carbs (+) →
+          </button>
+        </div>
+      </div>
+
+      <div class="valve-card">
+        <div class="valve-label-row">
+          <div class="valve-name">Valve C</div>
+          <div class="valve-value"><span id="valve2">–</span></div>
+        </div>
+        <div class="valve-visual">
+          <div class="valve-knob" id="knob2"></div>
+        </div>
+        <div class="valve-buttons">
+          <button class="btn-minus" id="btnMinus2" onclick="turnValve(2, -1)">
+            ← Insulin (–)
+          </button>
+          <button class="btn-plus" id="btnPlus2" onclick="turnValve(2, 1)">
+            Carbs (+) →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-new" onclick="newGame()">New Puzzle</button>
+
+    <div id="message" class="message"></div>
+    <div class="hint">
+      <b>Goal:</b> Match the current value in the circle to the target number using the three valves.
+    </div>
+  </div>
+
+  <script>
+    let startingValue = 0;
+    let currentValue = 0;
+    let targetValue = 0;
+    let valveValues = [0, 0, 0];
+    let moveCount = 0;
+    let gameOver = false;
+    let valveAngles = [0, 0, 0];
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function generatePuzzle() {
+      // Harder, more varied valve values
+      const possibleValveValues = [7, 9, 11, 13, 17, 19, 23, 27, 31, 37];
+
+      // Exact target: safe range 70–110 mg/dL
+      const targetMin = 70;
+      const targetMax = 110;
+      targetValue = getRandomInt(targetMin, targetMax);
+
+      // Choose 3 valve magnitudes
+      shuffle(possibleValveValues);
+      valveValues = possibleValveValues.slice(0, 3);
+
+      // Build a solvable starting value outside the safe range
+      let temp;
+      let tries = 0;
+      while (true) {
+        temp = targetValue;
+        const numSteps = getRandomInt(3, 6); // more hidden steps => harder
+        for (let i = 0; i < numSteps; i++) {
+          const vIndex = getRandomInt(0, 2);
+          const dir = Math.random() < 0.5 ? 1 : -1;
+          temp += dir * valveValues[vIndex];
+        }
+
+        const inSafeRange = temp >= 70 && temp <= 110;
+        const freaky = temp < 40 || temp > 260;
+        const tooClose = Math.abs(temp - targetValue) < 15;
+
+        if (!inSafeRange && !freaky && temp !== targetValue && !tooClose) {
+          break;
+        }
+        tries++;
+        if (tries > 40) {
+          // fallback so we don't loop forever
+          break;
+        }
+      }
+
+      startingValue = temp;
+      currentValue = temp;
+      moveCount = 0;
+      gameOver = false;
+      valveAngles = [0, 0, 0];
+
+      updateUI();
+      resetValveKnobs();
+      setMessage("Hard mode: hit the exact target, no range.", "");
+      enableButtons(true);
+    }
+
+    function resetValveKnobs() {
+      for (let i = 0; i < 3; i++) {
+        const knob = document.getElementById("knob" + i);
+        if (knob) {
+          knob.style.transform = "rotate(0deg)";
+        }
+      }
+    }
+
+    function updateMeterColor() {
+      const meter = document.getElementById("meterValue");
+
+      if (currentValue < 70) {
+        meter.style.color = "#1d4ed8"; // low
+        meter.style.textShadow = "0 0 8px rgba(37,99,235,0.35)";
+      } else if (currentValue > 110) {
+        meter.style.color = "#b91c1c"; // high
+        meter.style.textShadow = "0 0 8px rgba(248,113,113,0.45)";
+      } else {
+        meter.style.color = "#16a34a"; // safe
+        meter.style.textShadow = "0 0 8px rgba(34,197,94,0.45)";
+      }
+    }
+
+    function updateUI() {
+      document.getElementById("startingValue").textContent = startingValue;
+      document.getElementById("meterValue").textContent = currentValue;
+      document.getElementById("targetValue").textContent = targetValue;
+      document.getElementById("moveCount").textContent = moveCount;
+
+      document.getElementById("valve0").textContent = valveValues[0];
+      document.getElementById("valve1").textContent = valveValues[1];
+      document.getElementById("valve2").textContent = valveValues[2];
+
+      updateMeterColor();
+    }
+
+    function setMessage(text, type) {
+      const msgEl = document.getElementById("message");
+      msgEl.textContent = text;
+      msgEl.className = "message";
+      if (type === "win") msgEl.classList.add("win");
+      if (type === "loss") msgEl.classList.add("loss");
+    }
+
+    function enableButtons(enabled) {
+      for (let i = 0; i < 3; i++) {
+        const minusBtn = document.getElementById("btnMinus" + i);
+        const plusBtn = document.getElementById("btnPlus" + i);
+        minusBtn.disabled = !enabled;
+        plusBtn.disabled = !enabled;
+        if (!enabled) {
+          minusBtn.classList.add("btn-disabled");
+          plusBtn.classList.add("btn-disabled");
+        } else {
+          minusBtn.classList.remove("btn-disabled");
+          plusBtn.classList.remove("btn-disabled");
+        }
+      }
+    }
+
+    function turnValve(index, direction) {
+      if (gameOver) return;
+
+      const value = valveValues[index];
+      currentValue += direction * value;
+      moveCount += 1;
+
+      // rotate visual valve
+      valveAngles[index] += direction * 25; // 25 degrees per click
+      const knob = document.getElementById("knob" + index);
+      if (knob) {
+        knob.style.transform = "rotate(" + valveAngles[index] + "deg)";
+      }
+
+      updateUI();
+
+      if (currentValue === targetValue) {
+        setMessage(
+          "🎉 Perfect! You hit the exact target of " + targetValue + " mg/dL.",
+          "win"
+        );
+        gameOver = true;
+        enableButtons(false);
+      } else {
+        if (currentValue < targetValue) {
+          setMessage(
+            "Below target — like needing more carbs or less insulin.",
+            ""
+          );
+        } else if (currentValue > targetValue) {
+          setMessage(
+            "Above target — like needing more insulin or fewer carbs.",
+            ""
+          );
+        } else {
+          setMessage("", "");
+        }
+      }
+    }
+
+    function newGame() {
+      generatePuzzle();
+    }
+
+    window.onload = newGame;
+  </script>
+</body>
+</html>
